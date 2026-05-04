@@ -1,3 +1,4 @@
+from mimetypes import init
 from nt import error
 import requests
 import pytest
@@ -20,42 +21,45 @@ def user_input():
 
 
      
-
-    initial_currency = str(input("1 Initial Currency to convert from?: ")).upper()
-    while len(initial_currency) != 3:
+    while True:
         try:
-             initial_curr = int(initial_currency)
-
+            initial_currency = str(input("Initial Currency to convert from?: ")).upper()
+            
+            while len(initial_currency) != 3:
+                try:
+                    initial_curr = int(initial_currency)
+                except ValueError:
+                    break
+                else:
+                    print("Only Alphabets Allowed! Try Again!")
+                    break
+            if len(initial_currency) == 3:
+                initial_curr = int(initial_currency)
+                print("Only Alphabets Allowed! Try Again!")
+                continue
+            else:
+                continue
         except ValueError:
             break
+
+
+
+    
+    while True:
+        final_currency = str(input("Final Currency to convert to?: "))
+
+        if final_currency.isalpha():
+            if len(final_currency) != 3:
+                print("Invalid Currency, Try Again!")
+                continue
+            else:
+                final_currency = final_currency.upper()
+                break
         else:
-        
-            print("1 Only Alphabets Allowed! Try Again!")
-            initial_currency = str(input("2 Initial Currency to convert from?: ")).upper()  
+            print("Only Alphabets Allowed! Try Again!")
             continue
-            
-            # except ValueError:
-            #     initial_currency = str(initial_currency)
-
-
-
-    # while len(initial_currency) != 3:
         
-    #     try:
-    #         initial_currency = int(initial_currency)
-    #     except ValueError:
-    #         initial_currency = str(initial_currency)
-            
-    #     try:
-    #         print("3 Only Alphabets Allowed! Try Again!")
-    #         initial_currency = str(input("4 Initial Currency to convert from?: ")).upper()
-    #     except ValueError: 
-    #         initial_currency = str(initial_currency)
-
-    final_currency = str(input("Final Currency to convert to?: ")).upper()
-    while len(final_currency) != 3:
-         final_currency = str(input("Invalid Currency, Try Again! Final Currency to convert to?: ")).upper()
-
+        
     data += amount, initial_currency, final_currency
     return data
 
@@ -77,7 +81,7 @@ def fetch_exchange_rate(data):
             print("404 Client Error: Not Found")
         else:
             raise
-        #print(err)
+        
         
     else:
         result = res.json()
