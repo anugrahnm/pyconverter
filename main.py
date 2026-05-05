@@ -1,119 +1,95 @@
-from mimetypes import init
-from nt import error
 import requests
-import pytest
 
-def user_input():
-    data= []
-    while True:
-        try:
-            amount = int(input("Amount to convert: "))
-            if amount <= 0:
+
+class CurrencyConverter():
+    def __init__(self):
+        self.amount = None
+        self.initial_currency = None
+        self.final_currency = None
+        self.rate = None
+        self.new_amount = None
+
+
+    def get_input(self):
+        while True:
+            try:
+                self.amount = int(input("Amount to convert: "))
+                if self.amount <= 0:
+                    print("Invalid Amount, Try Again!")
+                    continue
+                break
+            except ValueError:
                 print("Invalid Amount, Try Again!")
                 continue
-            break
-        except ValueError:
-            print("Invalid Amount, Try Again!")
-            continue
+    
+        while True:
+            self.initial_currency = str(input("Initial Currency to convert from?: ")).upper()
 
-    # while amount <= 0:
-    #     amount = int(input("Invalid Amount, Try Again! Amount to convert: "))
-
-
-     
-    while True:
-        try:
-            initial_currency = str(input("Initial Currency to convert from?: ")).upper()
-            
-            while len(initial_currency) != 3:
-                try:
-                    initial_curr = int(initial_currency)
-                except ValueError:
-                    break
+            if self.initial_currency.isalpha():
+                if len(self.initial_currency) != 3:
+                    print("Invalid Currency, Try Again!")
+                    continue
                 else:
-                    print("Only Alphabets Allowed! Try Again!")
                     break
-            if len(initial_currency) == 3:
-                initial_curr = int(initial_currency)
+            else:
                 print("Only Alphabets Allowed! Try Again!")
                 continue
-            else:
-                continue
-        except ValueError:
-            break
-
-
-
     
-    while True:
-        final_currency = str(input("Final Currency to convert to?: "))
+        while True:
+            self.final_currency = str(input("Final Currency to convert to?: ")).upper()
 
-        if final_currency.isalpha():
-            if len(final_currency) != 3:
-                print("Invalid Currency, Try Again!")
-                continue
+            if self.final_currency.isalpha():
+                if len(self.final_currency) != 3:
+                    print("Invalid Currency, Try Again!")
+                    continue
+                else:
+                    break
             else:
-                final_currency = final_currency.upper()
-                break
+                print("Only Alphabets Allowed! Try Again!")
+                continue
+
+    def fetch_rates(self):
+        base = self.initial_currency
+        quotes = self.final_currency
+        url = f"https://api.frankfurter.dev/v2/rates"
+        params = {
+            "base": base,
+            "quotes": quotes
+        }
+
+        try:
+            res = requests.get(url=url, params=params)
+            res.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            if err.response.status_code == 422:
+                print("422 Client Error: Unprocessable Entity")
+            elif err.response.status_code == 404:
+                print("404 Client Error: Not Found")
+            else:
+                raise
         else:
-            print("Only Alphabets Allowed! Try Again!")
-            continue
-        
-        
-    data += amount, initial_currency, final_currency
-    return data
+            result = res.json()
+            self.rate = [i["rate"] for i in result][0]
 
-def fetch_exchange_rate(data):
-    base = data[1]
-    quotes = data[2]
-    url = f"https://api.frankfurter.dev/v2/rates"
-    params = {
-        "base": base,
-        "quotes": quotes
-    }
-    try:
-        res = requests.get(url=url, params=params)
-        res.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        if err.response.status_code == 422:
-            print("422 Client Error: Unprocessable Entity")
-        elif err.response.status_code == 404:
-            print("404 Client Error: Not Found")
+    def calculate(self):
+        
+        if self.rate is None or self.rate == 0 or self.rate < 0:
+            self.new_amount = "invalid currency"
         else:
-            raise
-        
-        
-    else:
-        result = res.json()
-        rate = [i["rate"] for i in result][0]
-        
-            
-        return rate
-
-def calculate_new_amount(exchange_rate, data):
-    rate =  exchange_rate
-    if rate is None or rate == 0 or rate < 0:
-        return "invalid currency"
-    else:
-        amount = data[0]
-        new_amount = amount * rate
-        return new_amount
-
+            self.new_amount = self.amount * self.rate
+    
+    def display(self):
+        if self.new_amount == "invalid currency":
+            print("Invalid Currency, Try Again!")
+        else:   
+            print(f"{self.amount} {self.initial_currency} is {self.new_amount} {self.final_currency} with the exchange rate of {self.rate}.")
 
 def main():
-    input_data = user_input()
-    rate = fetch_exchange_rate(input_data)
-
-    new_amount = calculate_new_amount(rate, input_data)
-    if new_amount == "invalid currency":
-        print("Invalid Currency, Try Again!")
-    else:   
-        print(f"{input_data[0]} {input_data[1]} is {new_amount} {input_data[2]} with the exchange rate of {rate}.")
-    
+    currency = CurrencyConverter()
+    currency.get_input()
+    currency.fetch_rates()
+    currency.calculate()
+    currency.display()
 
 if __name__ == "__main__":
     main()
-
-
-# def test_calculate_new_amount():
-#     assert calculate_new_amount(1.28, [100, "USD" , "EUR"]) == 128
